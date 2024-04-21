@@ -31,14 +31,11 @@ jobs:
     - name: Image Scan
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: 'https://hub.docker.com/repository/docker/${{ env.USER }}/python-api'
-        security-checks: 'os,library,vulnerability'
-        format: 'sarif'
-        output: 'trivy-image-results.sarif'
+        image-ref: '${{ env.USER }}/${{ env.TAG }}:${{ env.VERSION }}'
         severity: 'CRITICAL,HIGH'
           
-    # - name: Upload the scan result to GitHub Security
-    #   uses: github/codeql-action/upload-sarif@v2
-    #   with:
-    #     sarif_file: 'trivy-image-results.sarif'
-    #     category: 'image'
+    - name: Upload the scan result to GitHub Security
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-image-results.sarif'
+        category: 'image'
