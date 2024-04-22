@@ -1,0 +1,46 @@
+name: Build-Docker-Image
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_docker_img:
+    runs-on: ubuntu-latest
+    env:
+      TAG: python-api
+      DOCKER_USERNAME: ambarish6
+      DOCKER_PASSWORD: Ambi@9380
+      USER: ambarish6
+      VERSION: latest
+      TRIVY_VERSION: "0.19.2"  # Specify the version of Trivy you want to install
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+       
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ env.DOCKER_USERNAME }}
+        password: ${{ env.DOCKER_PASSWORD }}
+       
+    - name: Build Docker image
+      run: docker build -t ${{ env.USER }}/$TAG:${{ env.VERSION }} .
+      
+    - name: Push Docker image to Docker Hub
+      run: docker push ${{ env.USER }}/$TAG:${{ env.VERSION }}
+       
+    - name: Install Trivy
+      run: |
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v${{ env.TRIVY_VERSION }}
+        
+    - name: Image Scan
+      run: trivy image --severity HIGH,CRITICAL --format sarif --output trivy-image-results.sarif ${{ env.USER }}/${{ env.TAG }}:${{ env.VERSION }}
+
+    - name: Upload the scan result to GitHub Security
+      uses: github/codeql-action/upload-sarif@main
+      with:
+        sarif_file: 'trivy-image-results.sarif'
+        category: 'image'
