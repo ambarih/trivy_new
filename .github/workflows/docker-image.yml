@@ -24,9 +24,6 @@ jobs:
        
     - name: Build Docker image
       run: docker build -t ${{ env.USER }}/${{ env.TAG }}:${{ env.VERSION }} .
-      
-    # - name: Push Docker image to Docker Hub
-    #   run: docker push ${{ env.USER }}/${{ env.TAG }}:${{ env.VERSION }}
        
     - name: Image Scan
       uses: aquasecurity/trivy-action@master
@@ -45,3 +42,6 @@ jobs:
       with:
         sarif_file: 'trivy-image-results.sarif'
         category: 'image'
+        
+    - name: Push Docker image to Docker Hub
+      run: docker push ${{ env.USER }}/${{ env.TAG }}:${{ env.VERSION }}

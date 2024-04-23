@@ -1,0 +1,35 @@
+name: Build-Docker-Image-Child
+
+on:
+  workflow_run:
+    workflows: ["Build-Docker-Image-Parent"]
+    types:
+      - completed
+
+jobs:
+  image_scan_and_push:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+
+    - name: Image Scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: '${{ env.USER }}/${{ github.event.workflow_run.job.outputs.image_tag }}'
+        scan-type: 'config'
+        security-checks: 'vuln,secret,config'
+        severity: 'CRITICAL,HIGH'
+        format: 'sarif'
+        output: 'trivy-image-results.sarif'
+
+    - name: Upload the scan result to GitHub Security
+      uses: github/codeql-action/upload-sarif@main
+      with:
+        sarif_file: 'trivy-image-results.sarif'
+        category: 'image'
+
+    - name: Push Docker image to Docker Hub
+      run: docker push ${{ env.USER }}/${{ github.event.workflow_run.job.outputs.image_tag }}
