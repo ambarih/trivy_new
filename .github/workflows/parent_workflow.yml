@@ -20,7 +20,7 @@ jobs:
     
     - name: Wait for Child Pipeline
       run: |
-        sleep 240
+        sleep 120
         for i in {1..10}; do
           status=$(curl -H "Authorization: token ${{ secrets.TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
