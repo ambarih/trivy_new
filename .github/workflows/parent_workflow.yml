@@ -1,33 +1,38 @@
-name: Build-Docker-Image-Parent
+name: Parent Pipeline
 
-on: [push]
+on:
+  push:
+    branches:
+      - main
 
 jobs:
-  build_docker_img:
+  trigger-child-pipeline:
     runs-on: ubuntu-latest
-    env:
-      TAG: python-api
-      DOCKER_USERNAME: ambarish6
-      DOCKER_PASSWORD: Ambi@9380
-      USER: ambarish6
-      VERSION: latest
-
     steps:
-    - name: Checkout
-      uses: actions/checkout@v1
-
-    - name: Login to Docker Hub
-      uses: docker/login-action@v1
+    - name: Trigger Child Pipeline
+      id: trigger
+      uses: benc-uk/workflow-dispatch@v1
       with:
-        username: ${{ env.DOCKER_USERNAME }}
-        password: ${{ env.DOCKER_PASSWORD }}
-
-    - name: Build Docker image
-      id: build_image
-      run: docker build -t ${{ env.USER }}/${{ env.TAG }}:${{ env.VERSION }} .
-
-    - name: Trigger Child Workflow
-      if: ${{ always() }}
-      uses: ./.github/workflows/child_workflow.yml
-      with:
-        image_tag: ${{ steps.build_image.outputs.image_tag }}
+        workflow: child_workflow.yml
+        token: ${{ secrets.TOKEN }}
+        repo: ambarih/trivy
+    
+    - name: Wait for Child Pipeline
+      run: |
+        sleep 240
+        for i in {1..10}; do
+          status=$(curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/ambarih/trivy/actions/runs \
+            | jq -r '.workflow_runs | map(select(.name == "Child Pipeline" and .head_branch == "main")) | .[0].conclusion')
+          if [[ "$status" == "success" ]]; then
+            echo "Child pipeline succeeded."
+            exit 0
+          elif [[ "$status" == "failure" ]]; then
+            echo "Child pipeline failed."
+            exit 1
+          fi
+          sleep 24
+        done
+        echo "Child pipeline did not complete in time."
+        exit 1
