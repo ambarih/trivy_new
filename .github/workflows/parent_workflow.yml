@@ -22,7 +22,7 @@ jobs:
       run: |
         sleep 240
         for i in {1..10}; do
-          status=$(curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          status=$(curl -H "Authorization: token ${{ secrets.TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/ambarih/trivy/actions/runs \
             | jq -r '.workflow_runs | map(select(.name == "Child Pipeline" and .head_branch == "main")) | .[0].conclusion')
